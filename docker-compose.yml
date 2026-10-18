@@ -1,0 +1,59 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://redis:6379
+      FACE_GRPC_ADDR: face-service:50051
+      DEV_MODE: "true"          # serves the test page and /dev/token; remove in production
+      FACE_RATE_LIMIT: "100"    # attempts per 10 min per user; default is 5
+      PGHOST: postgres          # dev-only DB viewer (/dev/db); not used outside DEV_MODE
+      PGUSER: face_svc
+      PGPASSWORD: ${FACE_DB_PASSWORD}
+      PGDATABASE: app
+    ports: ["3000:3000"]
+    depends_on: [redis, face-service]
+    restart: unless-stopped
+
+  face-service:
+    build:
+      context: .
+      dockerfile: face_service/Dockerfile
+    environment:
+      # key/value form, so '@' and similar characters in the password are safe
+      DATABASE_URL: "host=postgres port=5432 dbname=app user=face_svc password='${FACE_DB_PASSWORD}'"
+      MODEL_VERSION: arcface-r50-w600k-v1
+      DEV_MODE: "true"
+      APP_ENV: development
+    volumes:
+      - ./face_service/models:/app/models:ro
+    expose: ["50051"]              # internal only
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    depends_on: [postgres]
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]   # sessions are ephemeral
+    restart: unless-stopped
+
+volumes:
+  pgdata:

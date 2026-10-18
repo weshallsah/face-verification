@@ -1,0 +1,9 @@
+grpcio
+grpcio-tools
+onnxruntime-gpu        # use onnxruntime for CPU-only machines
+insightface
+mediapipe
+opencv-python-headless
+numpy
+psycopg[binary,pool]
+pgvector
