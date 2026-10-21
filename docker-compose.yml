@@ -13,14 +13,14 @@ services:
       PGUSER: face_svc
       PGPASSWORD: ${FACE_DB_PASSWORD}
       PGDATABASE: app
-    ports: ["3000:3000"]
+    ports: ["${API_PORT:-3000}:3000"]   # override if 3000 is taken, e.g. API_PORT=3001
     depends_on: [redis, face-service]
     restart: unless-stopped
 
   face-service:
     build:
       context: .
-      dockerfile: face_service/Dockerfile
+      dockerfile: face_service/Dockerfile.cpu   # GPU: add -f docker-compose.gpu.yml
     environment:
       # key/value form, so '@' and similar characters in the password are safe
       DATABASE_URL: "host=postgres port=5432 dbname=app user=face_svc password='${FACE_DB_PASSWORD}'"
@@ -30,13 +30,6 @@ services:
     volumes:
       - ./face_service/models:/app/models:ro
     expose: ["50051"]              # internal only
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     depends_on: [postgres]
     restart: unless-stopped
 
@@ -45,6 +38,7 @@ services:
     environment:
       POSTGRES_DB: app
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      FACE_DB_PASSWORD: ${FACE_DB_PASSWORD}   # used by 002_face_svc_role.sh
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/migrations:/docker-entrypoint-initdb.d:ro

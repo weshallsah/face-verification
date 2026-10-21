@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 
 import cv2
@@ -6,6 +7,8 @@ import numpy as np
 
 from . import analysis as A
 from .db import dedup_and_insert, log_attempt
+
+log = logging.getLogger(__name__)
 
 
 class Outcome(Exception):
@@ -44,6 +47,7 @@ def analyse_frames(models, landmarker, cfg, challenge, frames):
         info = landmarker.analyse(img)
         if info is None:
             raise Outcome("RETRY", "no_face")
+        info["nose_dx"] = A.nose_offset(kps)
 
         crop = A.align(img, kps)
         info["quality"] = A.image_quality(crop)
@@ -58,8 +62,17 @@ def analyse_frames(models, landmarker, cfg, challenge, frames):
     if live < cfg.liveness_min:
         raise Outcome("REJECTED_SPOOF", "liveness", live)
 
+    if cfg.dev_mode:
+        # Per-frame values for calibrating the challenge and quality gates
+        for k, i in enumerate(infos):
+            log.info(
+                "frame %d %s: yaw=%.1f pitch=%.1f nose_dx=%+.2f blink=%.2f blur=%.0f bright=%.0f neutral=%s",
+                k, challenge, i["yaw"], i["pitch"], i["nose_dx"], A.blink_score(i),
+                i["quality"]["blur"], i["quality"]["brightness"], A.is_neutral(i, cfg),
+            )
+
     # 2. Active challenge
-    if not A.challenge_passed(challenge, infos):
+    if not A.challenge_passed(challenge, infos, cfg):
         raise Outcome("REJECTED_SPOOF", "challenge", live)
 
     # 3. Occlusion: report the most common problem so the app can show a specific hint

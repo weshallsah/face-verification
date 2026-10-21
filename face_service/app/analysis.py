@@ -103,19 +103,35 @@ def is_neutral(frame_info, cfg):
     )
 
 
-def challenge_passed(challenge, infos):
-    """infos: per-frame dicts from Landmarker.analyse, in capture order."""
+def nose_offset(kps):
+    """Nose x relative to the eye midpoint, in inter-eye distances, from detector keypoints.
+
+    Frames are un-mirrored camera images, so the subject's left is image right:
+    > 0 means the head is turned to the subject's left, < 0 to their right.
+    """
+    eyes_mid = (kps[0][0] + kps[1][0]) / 2
+    return float((kps[2][0] - eyes_mid) / max(abs(kps[1][0] - kps[0][0]), 1.0))
+
+
+def blink_score(frame_info):
+    s = frame_info["blendshapes"]
+    return (s.get("eyeBlinkLeft", 0) + s.get("eyeBlinkRight", 0)) / 2
+
+
+def challenge_passed(challenge, infos, cfg):
+    """infos: per-frame dicts from Landmarker.analyse plus "nose_dx", in capture order."""
     if challenge == "BLINK":
-        closed = [
-            (f["blendshapes"].get("eyeBlinkLeft", 0) + f["blendshapes"].get("eyeBlinkRight", 0)) / 2 > 0.6
-            for f in infos
-        ]
+        closed = [blink_score(f) > cfg.blink_closed_min for f in infos]
         # open → closed → open somewhere in the sequence
         return any(closed[1:-1]) and not closed[0] and not closed[-1]
 
-    yaws = [f["yaw"] for f in infos]
-    if challenge == "TURN_LEFT":
-        return max(yaws) > 20 and abs(yaws[0]) < 12      # flip signs if your convention differs
-    if challenge == "TURN_RIGHT":
-        return min(yaws) < -20 and abs(yaws[0]) < 12
+    if challenge in ("TURN_LEFT", "TURN_RIGHT"):
+        # Magnitude from the MediaPipe pose, direction from 2D geometry, so the check
+        # does not depend on the pose matrix's sign convention.
+        direction = 1 if challenge == "TURN_LEFT" else -1
+        started_centred = abs(infos[0]["yaw"]) < cfg.challenge_start_max_yaw_deg
+        turned = any(
+            abs(f["yaw"]) > cfg.turn_min_yaw_deg and f["nose_dx"] * direction > 0 for f in infos
+        )
+        return started_centred and turned
     return False

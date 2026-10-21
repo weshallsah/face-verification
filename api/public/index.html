@@ -34,7 +34,7 @@
 <body>
 <main>
   <h1>Face Verification Test</h1>
-  <p class="sub">Local test tool. Uses a dev-only token endpoint.</p>
+  <p class="sub">Local test tool. Uses a dev-only token endpoint. <a href="/dashboard.html" style="color:var(--accent)">Data dashboard</a></p>
 
   <div class="card">
     <label for="uid">User ID (numeric)</label>
@@ -62,11 +62,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const INSTRUCTIONS = {
   BLINK: 'Now blink slowly, once',
-  TURN_LEFT: 'Now turn your head left, then hold',
-  TURN_RIGHT: 'Now turn your head right, then hold',
+  TURN_LEFT: 'Now turn your head to your left, then hold',
+  TURN_RIGHT: 'Now turn your head to your right, then hold',
 };
-// Frame spacing during the challenge window (max 8 frames total: 2 + 4 + 2).
-const CHALLENGE_INTERVAL = { BLINK: 130, TURN_LEFT: 300, TURN_RIGHT: 300 };
+// Challenge window: delay after the prompt, frame count and spacing (max 10 frames total: 2 + n + 2).
+// Blink gets more, denser frames because a blink lasts only ~150–300 ms.
+const CHALLENGE_CAPTURE = {
+  BLINK: { delay: 300, n: 6, interval: 150 },
+  TURN_LEFT: { delay: 1000, n: 4, interval: 350 },
+  TURN_RIGHT: { delay: 1000, n: 4, interval: 350 },
+};
 
 let stream;
 
@@ -74,7 +79,8 @@ function setPrompt(text) { $('prompt').textContent = text; }
 
 function grab() {
   const v = $('video');
-  const scale = 640 / Math.max(v.videoWidth, v.videoHeight);
+  // 1280 keeps a face at laptop distance above min_face_px (120) even when turned
+  const scale = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
   const c = document.createElement('canvas');
   c.width = Math.round(v.videoWidth * scale);
   c.height = Math.round(v.videoHeight * scale);
@@ -98,7 +104,7 @@ async function api(path, opts, token) {
 }
 
 const REASONS = {
-  challenge: 'The %CHALLENGE% action was not detected in the frames. Do it slowly and clearly when prompted; for a turn, turn at least ~20° then come back to centre.',
+  challenge: 'The %CHALLENGE% action was not detected in the frames. Do it slowly and clearly when prompted; for a turn, turn at least ~15° then come back to centre.',
   liveness: 'Liveness check scored too low.',
   face_changed_during_session: 'The face in the frames did not match across the session.',
   bad_frame_count: 'Wrong number of frames.',
@@ -159,11 +165,12 @@ async function run() {
     frames.push(...await capture(2, 300));
 
     setPrompt(INSTRUCTIONS[challenge]);
-    await sleep(700);
-    frames.push(...await capture(4, CHALLENGE_INTERVAL[challenge]));
+    const cc = CHALLENGE_CAPTURE[challenge];
+    await sleep(cc.delay);
+    frames.push(...await capture(cc.n, cc.interval));
 
     setPrompt('Look straight again and hold still');
-    await sleep(900);
+    await sleep(1200);
     frames.push(...await capture(2, 300));
 
     $('oval').classList.remove('go');

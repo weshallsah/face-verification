@@ -10,7 +10,7 @@ import { requireAuth } from '../auth.js';
 const CHALLENGES = ['BLINK', 'TURN_LEFT', 'TURN_RIGHT'];
 const SESSION_TTL = 120;           // seconds
 const MIN_FRAMES = 5;
-const MAX_FRAMES = 8;
+const MAX_FRAMES = 10;
 
 // Map server reason codes to user-facing hints (localise these in the app).
 const HINTS = {

@@ -1,0 +1,13 @@
+# GPU override for machines with an NVIDIA GPU:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+services:
+  face-service:
+    build:
+      dockerfile: face_service/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
