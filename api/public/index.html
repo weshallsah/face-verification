@@ -2,80 +2,439 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Face Verification Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Face Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f5f6f8; --card:#fff; --text:#1c1f24; --muted:#6b7280; --accent:#2563eb; --ok:#16a34a; --bad:#dc2626; --warn:#d97706; --border:#e5e7eb; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#0f1115; --card:#181b21; --text:#e8eaed; --muted:#9aa0a6; --border:#2a2f38; }
+  :root {
+    --bg:#f5f6f8; --surface:#fff; --text:#11161d; --muted:#5b6472; --line:#e3e6eb;
+    --blue:#2557d6; --blue-soft:#e4ebfb; --green:#14805e; --green-soft:#dff1e9; --orange:#c4410e; --orange-soft:#fde9df;
+    --dark:#0b0d12; --dark-2:#1a1d24; --dark-3:#2a2e37; --dark-text:#e9ebef; --dark-muted:#a3a9b4; --scan:#4c7dff;
   }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui, sans-serif; }
-  main { max-width:520px; margin:0 auto; padding:24px 16px; }
-  h1 { font-size:20px; margin:0 0 4px; }
-  p.sub { color:var(--muted); margin:0 0 16px; font-size:14px; }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px; }
-  label { font-size:13px; color:var(--muted); display:block; margin-bottom:4px; }
-  input { width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); font-size:16px; }
-  button { width:100%; margin-top:12px; padding:12px; border:0; border-radius:8px; background:var(--accent); color:#fff; font-size:16px; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-  .stage { position:relative; aspect-ratio:3/4; background:#000; border-radius:12px; overflow:hidden; }
-  video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
-  .oval { position:absolute; inset:12% 20%; border:3px solid rgba(255,255,255,.7); border-radius:50%; transition:border-color .2s; }
-  .oval.go { border-color:#22c55e; }
-  .prompt { position:absolute; left:0; right:0; top:0; text-align:center; color:#fff; font-weight:700; font-size:20px; line-height:1.3; padding:16px 12px 28px; background:linear-gradient(rgba(0,0,0,.75), rgba(0,0,0,0)); text-shadow:0 1px 4px #000; }
-  .prompt:empty { display:none; }
-  #result { font-weight:600; }
-  #result.VERIFIED { color:var(--ok); } #result.DUPLICATE,#result.FAILED { color:var(--bad); }
-  #result.RETRY,#result.IN_REVIEW,#result.ALREADY_VERIFIED { color:var(--warn); }
-  .muted { color:var(--muted); font-size:13px; white-space:pre-line; }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  html, body { height:100%; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.45 Manrope, system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+  .screen { min-height:100%; max-width:420px; margin:0 auto; padding:20px 24px 28px; display:flex; flex-direction:column; }
+  .bar { display:grid; grid-template-columns:44px 1fr 44px; align-items:center; min-height:44px; }
+  .bar .title { text-align:center; font-weight:600; color:var(--muted); font-size:15px; }
+  .round { width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .round svg { width:20px; height:20px; }
+  .grow { flex:1; }
+  h1 { font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-.02em; text-align:center; margin:28px 0 10px; }
+  .lead { text-align:center; color:var(--muted); font-size:16px; margin:0; }
+  .lead b { color:var(--text); }
+  .hero { width:148px; height:148px; margin:32px auto 0; border-radius:50%; background:var(--blue-soft); color:var(--blue); display:flex; align-items:center; justify-content:center; }
+  .hero svg { width:72px; height:72px; }
+  .tips { list-style:none; margin:28px 0 0; padding:0; display:grid; gap:14px; }
+  .tips li { display:flex; align-items:center; gap:14px; font-weight:600; font-size:16px; }
+  .tips .ic { flex:none; width:42px; height:42px; border-radius:12px; border:1px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; }
+  .tips .ic svg { width:20px; height:20px; }
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:4px 18px; margin-top:24px; }
+  .note { display:flex; gap:12px; padding:14px 0; color:var(--muted); font-size:14px; }
+  .note svg { flex:none; width:20px; height:20px; color:var(--green); margin-top:1px; }
+  .primary { width:100%; margin-top:24px; padding:16px; border:0; border-radius:16px; background:var(--blue); color:#fff; font:700 17px Manrope, system-ui, sans-serif; cursor:pointer; }
+  .primary:disabled { opacity:.6; cursor:default; }
+  .link { display:block; width:100%; margin-top:10px; padding:10px; border:0; background:none; color:var(--muted); font:600 16px Manrope, system-ui, sans-serif; text-align:center; text-decoration:none; cursor:pointer; }
+  details.dev { margin-top:8px; font-size:13px; color:var(--muted); text-align:center; }
+  details.dev summary { cursor:pointer; }
+  details.dev input { width:100%; margin-top:8px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; font:15px Manrope, system-ui, sans-serif; }
+  details.dev .debug { white-space:pre-line; text-align:left; margin-top:8px; }
+
+  /* Face scan (dark) */
+  body.dark { background:var(--dark); color:var(--dark-text); }
+  .scan .round { background:var(--dark-2); border-color:var(--dark-2); color:var(--dark-text); }
+  .scan .bar .title { color:var(--dark-muted); }
+  .scan h1 { margin:20px 0 4px; font-size:26px; min-height:30px; }
+  .scan .lead { color:var(--dark-muted); min-height:23px; }
+  .ovalwrap { position:relative; width:min(78%, 46vh); aspect-ratio:280/360; margin:24px auto 0; }
+  .ovalwrap .cam { position:absolute; inset:4%; border-radius:50%; overflow:hidden; background:var(--dark-2); }
+  .ovalwrap video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+  .ovalwrap svg.ring { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+  .ring .track { fill:none; stroke:var(--dark-3); stroke-width:6; }
+  .ring .fill { fill:none; stroke:var(--scan); stroke-width:6; stroke-linecap:round; transition:stroke-dasharray .25s; }
+  .ring .fill.done { stroke:#22c58b; }
+  .cue { position:absolute; z-index:2; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:var(--scan); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 6px rgba(76,125,255,.25); transition:left .3s, top .3s; }
+  .cue.free { transition:none; }
+  .cue svg { width:22px; height:22px; transition:transform .3s; }
+  .status { align-self:center; margin-top:22px; display:flex; align-items:center; gap:10px; padding:9px 18px; border-radius:999px; background:var(--dark-2); font-weight:600; font-size:15px; }
+  .status i { width:10px; height:10px; border-radius:50%; background:#f59e0b; }
+  .status.ok i { background:#22c58b; }
+  .stepcards { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-top:auto; padding-top:24px; }
+  .stepcard { border-radius:16px; background:var(--dark-2); border:1.5px solid transparent; padding:14px 4px 12px; text-align:center; color:var(--dark-muted); font-weight:600; font-size:13px; }
+  .stepcard .dot { width:34px; height:34px; margin:0 auto 6px; border-radius:50%; border:2px solid var(--dark-3); display:flex; align-items:center; justify-content:center; }
+  .stepcard .dot svg { width:18px; height:18px; }
+  .stepcard.on { border-color:var(--scan); color:#fff; background:#161c2c; }
+  .stepcard.on .dot { background:var(--scan); border-color:var(--scan); color:#fff; }
+  .stepcard.done { color:var(--dark-text); }
+  .stepcard.done .dot { background:var(--green); border-color:var(--green); color:#fff; }
+  .foot { text-align:center; color:var(--dark-muted); font-size:14px; margin-top:14px; }
+  .foot button { background:none; border:0; padding:0; color:#8fb0ff; text-decoration:underline; font:inherit; cursor:pointer; }
+  .sheet { position:fixed; inset:0; z-index:10; background:rgba(0,0,0,.55); display:flex; align-items:flex-end; justify-content:center; }
+  .sheet > div { width:100%; max-width:420px; background:var(--surface); color:var(--text); border-radius:24px 24px 0 0; padding:24px; }
+  .sheet h2 { margin:0 0 4px; font-size:20px; }
+
+  /* Verifying */
+  .spinring { position:relative; width:176px; height:176px; margin:56px auto 0; }
+  .spinring .arc { position:absolute; inset:0; border-radius:50%; border:6px solid var(--line); border-top-color:var(--blue); border-right-color:var(--blue); animation:spin 1.1s linear infinite; }
+  .spinring .face { position:absolute; inset:14px; border-radius:50%; background:#dde3ec; overflow:hidden; }
+  .spinring .face::before { content:""; position:absolute; left:50%; top:24%; width:38%; height:38%; margin-left:-19%; border-radius:50%; background:#b8c2d0; }
+  .spinring .face::after { content:""; position:absolute; left:50%; bottom:-22%; width:66%; height:52%; margin-left:-33%; border-radius:50%; background:#b8c2d0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .progress { list-style:none; margin:0; padding:0; }
+  .progress li { display:flex; align-items:center; gap:14px; padding:16px 0; }
+  .progress li + li { border-top:1px solid var(--line); }
+  .progress .st { flex:none; width:30px; height:30px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; color:#fff; }
+  .progress .st svg { width:16px; height:16px; }
+  .progress b { display:block; font-size:16px; }
+  .progress span { color:var(--muted); font-size:14px; }
+  .progress b span { color:inherit; font-size:inherit; }
+  .progress em { margin-left:auto; font-style:normal; color:var(--blue); font-weight:700; font-size:14px; }
+  .progress li.on .st { border-color:#c9d6f6; background:radial-gradient(var(--blue) 0 6px, transparent 7px); }
+  .progress li.done .st { border-color:var(--green); background:var(--green); }
+  .progress li.wait { opacity:.6; }
+
+  /* Results */
+  .badge { width:112px; height:112px; margin:56px auto 0; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; }
+  .badge svg { width:40px; height:40px; }
+  .badge.ok { background:var(--green); box-shadow:0 0 0 18px var(--green-soft); }
+  .badge.bad { background:var(--orange); box-shadow:0 0 0 18px var(--orange-soft); }
+  .badge.warn { background:#b7791f; box-shadow:0 0 0 18px #fbf0d9; }
+  .account { display:flex; align-items:center; gap:14px; padding:16px 0; }
+  .avatar { position:relative; flex:none; width:52px; height:52px; border-radius:50%; background:#dde3ec; color:#5b6472; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; }
+  .avatar i { position:absolute; right:-3px; bottom:-3px; width:22px; height:22px; border-radius:50%; background:var(--blue); border:2px solid #fff; display:flex; align-items:center; justify-content:center; }
+  .avatar i svg { width:12px; height:12px; color:#fff; }
+  .account b { display:block; font-size:17px; }
+  .account span { color:var(--muted); font-size:14px; }
+  .account b span { color:inherit; font-size:inherit; }
+  .pill { margin-left:auto; padding:6px 12px; border-radius:999px; background:var(--green-soft); color:var(--green); font-weight:700; font-size:14px; white-space:nowrap; }
+  .fixes li { display:flex; gap:14px; padding:16px 0; }
+  .fixes li + li { border-top:1px solid var(--line); }
+  .fixes svg { flex:none; width:22px; height:22px; color:var(--orange); margin-top:2px; }
+  .fixes b { display:block; font-size:16px; }
+  .fixes span { color:var(--muted); font-size:14px; }
+  .fixes { list-style:none; margin:0; padding:0; }
+  .attempts { text-align:center; color:var(--muted); font-size:15px; margin-top:16px; }
+  .attempts b { color:var(--text); }
 </style>
 </head>
 <body>
-<main>
-  <h1>Face Verification Test</h1>
-  <p class="sub">Local test tool. Uses a dev-only token endpoint. <a href="/dashboard.html" style="color:var(--accent)">Data dashboard</a></p>
 
-  <div class="card">
-    <label for="uid">User ID (numeric)</label>
-    <input id="uid" inputmode="numeric" value="1001">
-    <button id="start">Start verification</button>
+<!-- Icons, reused with <svg><use href="#i-..."/></svg> -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-face" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M9 9v1M15 9v1M12 9v3.5h-1M9 15.5a4 4 0 0 0 6 0"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-glasses" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="14" r="3.5"/><circle cx="17.5" cy="14" r="3.5"/><path d="M10 14h4M3 3l18 18"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 6v8M12 18.5h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-move" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 7l5 5-5 5M20 5v14"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/></symbol>
+  </defs>
+</svg>
+
+<!-- 1. Intro -->
+<section class="screen" id="intro">
+  <div class="bar"><span></span><div class="title">Step 1 of 3</div><span></span></div>
+  <div class="hero"><svg><use href="#i-face"/></svg></div>
+  <h1>Verify it's really you</h1>
+  <p class="lead">Take a quick face scan to link your face to <b id="introUser"></b>. It takes a few seconds.</p>
+  <ul class="tips">
+    <li><span class="ic"><svg><use href="#i-sun"/></svg></span>Find good, even lighting</li>
+    <li><span class="ic"><svg><use href="#i-glasses"/></svg></span>Remove glasses, mask or hat</li>
+    <li><span class="ic"><svg><use href="#i-eye"/></svg></span>Look at the camera, not the screen</li>
+  </ul>
+  <div class="panel"><div class="note"><svg><use href="#i-lock"/></svg>Photos are only used for this check and are never saved. We keep a face template to protect your account.</div></div>
+  <div class="grow"></div>
+  <button class="primary" id="start">Start verification</button>
+  <details class="dev">
+    <summary>Test settings</summary>
+    <input id="uid" inputmode="numeric" value="1001" aria-label="User ID">
+    <a class="link" href="/dashboard.html">Data dashboard</a>
+  </details>
+</section>
+
+<!-- 2. Face scan -->
+<section class="screen scan" id="scan" hidden>
+  <div class="bar">
+    <button class="round" id="cancel" aria-label="Cancel"><svg><use href="#i-x"/></svg></button>
+    <div class="title">Step 2 of 3 · Face scan</div>
+    <button class="round" id="helpBtn" aria-label="Help"><svg><use href="#i-help"/></svg></button>
   </div>
+  <h1 id="say"></h1>
+  <p class="lead" id="sayMore"></p>
+  <div class="ovalwrap">
+    <div class="cam"><video id="video" autoplay playsinline muted></video></div>
+    <!-- viewBox matches the wrapper (280 x 360); the track hugs the camera oval -->
+    <svg class="ring" viewBox="0 0 280 360" aria-hidden="true">
+      <ellipse class="track" cx="140" cy="180" rx="136" ry="174"/>
+      <path class="fill" id="fill" pathLength="100" stroke-dasharray="0 100" d="M140 6A136 174 0 0 1 140 354A136 174 0 0 1 140 6"/>
+    </svg>
+    <div class="cue" id="cue" hidden><svg id="cueIcon"><use href="#i-arrow"/></svg></div>
+  </div>
+  <div class="status" id="status"><i></i><span id="statusText">Starting camera…</span></div>
+  <div class="stepcards">
+    <div class="stepcard" id="sc0"><div class="dot"><svg><use href="#i-eye"/></svg></div>Look ahead</div>
+    <div class="stepcard" id="sc1"><div class="dot"><svg><use href="#i-back"/></svg></div><span id="sc1Label">Turn left</span></div>
+  </div>
+  <p class="foot">Keep your face inside the oval. <button id="helpLink">Having trouble?</button></p>
+</section>
 
-  <div class="card" id="camCard" hidden>
-    <div class="stage">
-      <video id="video" autoplay playsinline muted></video>
-      <div class="oval" id="oval"></div>
-      <div class="prompt" id="prompt"></div>
+<!-- Help sheet -->
+<div class="sheet" id="help" hidden>
+  <div>
+    <h2>Tips for a good scan</h2>
+    <ul class="tips" style="margin-top:16px">
+      <li><span class="ic"><svg><use href="#i-eye"/></svg></span>Look at the camera, keep it at eye level</li>
+      <li><span class="ic"><svg><use href="#i-sun"/></svg></span>Face a window or a lamp</li>
+      <li><span class="ic"><svg><use href="#i-move"/></svg></span>Turn your head slowly when asked, then hold</li>
+    </ul>
+    <button class="primary" id="helpClose">Got it</button>
+  </div>
+</div>
+
+<!-- 3. Verifying -->
+<section class="screen" id="verifying" hidden>
+  <div class="bar"><span></span><div class="title">Step 3 of 3</div><span></span></div>
+  <div class="spinring"><div class="arc"></div><div class="face"></div></div>
+  <h1>Verifying your face</h1>
+  <p class="lead">This usually takes a few seconds. Please keep this page open.</p>
+  <div class="panel">
+    <ul class="progress">
+      <li id="v0"><span class="st"></span><div><b>Liveness check</b><span>Making sure it's a live person</span></div></li>
+      <li id="v1"><span class="st"></span><div><b>Matching your face</b><span>Checking it isn't already registered</span></div></li>
+      <li id="v2"><span class="st"></span><div><b>Linking to user <span class="uname-id"></span></b><span>Securing your account</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4a. Success -->
+<section class="screen" id="success" hidden>
+  <div class="badge ok"><svg><use href="#i-check"/></svg></div>
+  <h1 id="okTitle">Face verified</h1>
+  <p class="lead" id="okText">Your face is now linked to your account.</p>
+  <div class="panel">
+    <div class="account">
+      <div class="avatar" id="okInitial">U<i><svg><use href="#i-check"/></svg></i></div>
+      <div><b>User <span class="uname-id"></span></b><span class="uname"></span></div>
+      <span class="pill">Face linked</span>
     </div>
   </div>
+  <div class="grow"></div>
+  <button class="primary" data-go="intro">Continue</button>
+  <a class="link" href="/dashboard.html">Manage face data</a>
+  <details class="dev" hidden><summary>Details</summary><div class="debug"></div></details>
+</section>
 
-  <div class="card" id="resCard" hidden>
-    <div id="result"></div>
-    <div class="muted" id="detail"></div>
-  </div>
-</main>
+<!-- 4b. Failure / other outcomes -->
+<section class="screen" id="failure" hidden>
+  <div class="bar"><button class="round" data-go="intro" aria-label="Close"><svg><use href="#i-x"/></svg></button><span></span><span></span></div>
+  <div class="badge bad" id="failBadge" style="margin-top:24px"><svg id="failIcon"><use href="#i-alert"/></svg></div>
+  <h1 id="failTitle"></h1>
+  <p class="lead" id="failText"></p>
+  <div class="panel" id="fixPanel"><ul class="fixes" id="fixes"></ul></div>
+  <p class="attempts" id="attempts" hidden></p>
+  <div class="grow"></div>
+  <button class="primary" id="retry">Try again</button>
+  <button class="link" data-go="intro">Not now</button>
+  <details class="dev" hidden><summary>Details</summary><div class="debug"></div></details>
+</section>
 
 <script>
 const $ = (id) => document.getElementById(id);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const deg = (rad) => (rad * 180) / Math.PI;
 
-const INSTRUCTIONS = {
-  BLINK: 'Now blink slowly, once',
-  TURN_LEFT: 'Now turn your head to your left, then hold',
-  TURN_RIGHT: 'Now turn your head to your right, then hold',
-};
-// Challenge window: delay after the prompt, frame count and spacing (max 10 frames total: 2 + n + 2).
-// Blink gets more, denser frames because a blink lasts only ~150–300 ms.
-const CHALLENGE_CAPTURE = {
-  BLINK: { delay: 300, n: 6, interval: 150 },
-  TURN_LEFT: { delay: 1000, n: 4, interval: 350 },
-  TURN_RIGHT: { delay: 1000, n: 4, interval: 350 },
-};
+// Set by the ✕ button; every wait checks it, so a run stops at its next step.
+let cancelled = false, deadline = Infinity;
+class Cancelled extends Error {}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms)).then(() => {
+  if (cancelled) throw new Cancelled();
+  if (performance.now() > deadline) throw new Error('timeout');
+});
+const tick = () => sleep(40);
+// Short haptic taps on phones that support it (Android; iOS browsers ignore this).
+const buzz = (pattern) => { try { navigator.vibrate?.(pattern); } catch {} };
+// A problem must last this long before an in-progress hold is lost, so a shaky hand doesn't restart it.
+const JITTER_GRACE_MS = 250;
+
+// The head turn asked for: -1 is the user's left, +1 their right. On the mirrored
+// preview their left is also the left of the screen.
+const TURN = { LOOK_LEFT: -1, LOOK_RIGHT: 1 };
+const SIDE = { '-1': { word: 'left', icon: 'i-back' }, 1: { word: 'right', icon: 'i-next' } };
+const SESSION_BUDGET_MS = 100_000;   // the server session lasts 120 s
+const TURN_FRAMES = 2;               // 2 straight + 2 turned = 4 frames; fewer frames, faster check
+const TURN_TARGET_DEG = 15;          // turn this far to start capturing; the server needs 12°
+const TURN_KEEP_DEG = 13.5;          // ...and keep capturing while above this, so small wobbles don't reset
+const TRACK_RX = (136 / 280) * 100;  // the cue sits on the ring, as % of the wrapper width
+
+/* ---------- Screens ---------- */
+
+const SCREENS = ['intro', 'scan', 'verifying', 'success', 'failure'];
+function screen(name) {
+  for (const id of SCREENS) $(id).hidden = id !== name;
+  document.body.classList.toggle('dark', name === 'scan');
+  scrollTo(0, 0);
+}
+document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => screen(b.dataset.go)));
+
+function userId() { return $('uid').value.trim() || '1001'; }
+function fillUser() {
+  const id = userId();
+  $('introUser').textContent = `user ${id}`;
+  document.querySelectorAll('.uname').forEach((e) => (e.textContent = `ID ${id}`));
+  document.querySelectorAll('.uname-id').forEach((e) => (e.textContent = id));
+}
+$('uid').addEventListener('input', fillUser);
+fillUser();
+
+/* ---------- Live face tracking (MediaPipe in the browser) ---------- */
+
+const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const MP_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+async function loadTracker() {
+  const { FaceLandmarker, FilesetResolver } = await import(`${MP}/vision_bundle.mjs`);
+  const fileset = await FilesetResolver.forVisionTasks(`${MP}/wasm`);
+  const opts = (delegate) => ({
+    baseOptions: { modelAssetPath: MP_MODEL, delegate },
+    runningMode: 'VIDEO', numFaces: 2, outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
+  });
+  return FaceLandmarker.createFromOptions(fileset, opts('GPU'))
+    .catch(() => FaceLandmarker.createFromOptions(fileset, opts('CPU')));
+}
+// Start loading on page open; null means fall back to the timed flow.
+const trackerReady = loadTracker().catch((e) => { console.warn('face tracker unavailable', e); return null; });
+
+let live = null, trackRaf;
+const lumaCanvas = Object.assign(document.createElement('canvas'), { width: 32, height: 32 });
+
+function startTracking(tracker) {
+  const v = $('video');
+  let lastT = -1, n = 0;
+  const loop = () => {
+    trackRaf = requestAnimationFrame(loop);
+    if (v.readyState < 2 || v.currentTime === lastT) return;
+    lastT = v.currentTime;
+    live = readFace(tracker.detectForVideo(v, performance.now()), v, n++ % 8 ? live?.light : undefined);
+  };
+  loop();
+}
+
+function stopTracking() { cancelAnimationFrame(trackRaf); live = null; }
+
+function readFace(res, v, light) {
+  const faces = res.faceLandmarks.length;
+  if (faces !== 1) return { faces };
+  // Same maths as the server's _yaw_pitch. The data is column-major; Python transposes the same array.
+  // pitch > 0 is up, yaw > 0 is the user's right (their right on the mirrored preview too).
+  const d = res.facialTransformationMatrixes[0].data;
+  const m = (i, j) => d[j * 4 + i];
+  const yaw = deg(Math.atan2(m(0, 2), m(2, 2)));
+  const pitch = deg(Math.asin(Math.max(-1, Math.min(1, -m(1, 2)))));
+  const shapes = Object.fromEntries(res.faceBlendshapes[0].categories.map((c) => [c.categoryName, c.score]));
+
+  // Face box relative to the camera oval, which crops the video (object-fit: cover) and mirrors it.
+  let x0 = 1, x1 = 0, y0 = 1, y1 = 0;
+  for (const p of res.faceLandmarks[0]) {
+    x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y);
+  }
+  const W = v.videoWidth, H = v.videoHeight, aspect = v.clientWidth / v.clientHeight;
+  const fx = Math.min(1, (aspect * H) / W), fy = Math.min(1, W / aspect / H);   // visible part of the source
+  const box = { w: (x1 - x0) / fx, cx: 0.5 - ((x0 + x1) / 2 - 0.5) / fx, cy: 0.5 + ((y0 + y1) / 2 - 0.5) / fy };
+
+  if (light === undefined) {   // mean brightness of the face, sampled every few frames
+    const g = lumaCanvas.getContext('2d', { willReadFrequently: true });
+    g.drawImage(v, x0 * W, y0 * H, (x1 - x0) * W, (y1 - y0) * H, 0, 0, 32, 32);
+    const px = g.getImageData(0, 0, 32, 32).data;
+    let sum = 0;
+    for (let i = 0; i < px.length; i += 4) sum += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+    light = sum / (px.length / 4);
+  }
+  return { faces, yaw, pitch, shapes, box, light };
+}
+
+// Expression groups the server's neutral check looks at (it rejects at 0.35; we warn a bit earlier).
+const SMILE = ['mouthSmileLeft', 'mouthSmileRight'];
+const EYES = ['eyeBlinkLeft', 'eyeBlinkRight', 'eyeSquintLeft', 'eyeSquintRight'];
+const OTHER = ['jawOpen', 'mouthPucker', 'mouthFunnel', 'cheekPuff', 'browDownLeft', 'browDownRight', 'browInnerUp'];
+const busy = (s, keys, limit) => keys.some((k) => (s[k] ?? 0) >= limit);
+
+// What stops this from being a good straight-on frame: [headline, detail], or null.
+// While a hold is in progress the limits loosen a little, so slight shaking doesn't break it;
+// they stay inside the server's own limits (15° yaw/pitch, 0.35 expression).
+function problem(p, holding = false) {
+  const lim = holding ? { deg: 13, off: 0.2, expr: 0.33 } : { deg: 10, off: 0.15, expr: 0.3 };
+  if (!p || p.faces === 0) return ['Put your face in the oval', 'Hold the camera at eye level'];
+  if (p.faces > 1) return ['Only one face, please', 'Make sure no one is behind you'];
+  if (p.box.w < 0.35) return ['Move closer', 'Fill the oval with your face'];
+  if (p.box.w > 1.0) return ['Move back a little', 'Your whole face should fit in the oval'];
+  if (Math.abs(p.box.cx - 0.5) > lim.off || Math.abs(p.box.cy - 0.5) > lim.off) return ['Center your face', 'Keep your face inside the oval'];
+  if (p.light < 70) return ['Find better light', 'Face a window or a lamp'];
+  if (p.light > 200) return ['Too bright', 'Move away from direct light'];
+  if (p.pitch < -lim.deg) return ['Look up at the camera', 'Not at the screen'];
+  if (p.pitch > lim.deg) return ['Lower your chin a little', 'Look straight at the camera'];
+  if (Math.abs(p.yaw) > lim.deg) return ['Face the camera', 'Look straight ahead'];
+  if (busy(p.shapes, SMILE, lim.expr)) return ["Don't smile", 'Keep a relaxed face'];
+  if (busy(p.shapes, EYES, lim.expr)) return ['Keep your eyes open', 'Look straight at the camera'];
+  if (busy(p.shapes, OTHER, lim.expr)) return ['Relax your face', 'Keep a neutral expression'];
+  return null;
+}
+
+/* ---------- Scan UI helpers ---------- */
 
 let stream;
 
-function setPrompt(text) { $('prompt').textContent = text; }
+function say(text, more = '') { $('say').textContent = text; $('sayMore').textContent = more; }
+
+function status(text, ok = true) {
+  $('statusText').textContent = text;
+  $('status').classList.toggle('ok', ok);
+}
+
+let percent = 0;
+function setProgress(p) {
+  percent = Math.max(0, Math.min(100, Math.round(p)));
+  $('fill').setAttribute('stroke-dasharray', `${percent} 100`);
+  $('fill').classList.toggle('done', percent >= 100);
+}
+
+// Highlights the current step card; earlier ones show a check.
+let stepIcons = [];
+function setStep(i) {
+  if (i > 0) buzz(30);
+  for (let k = 0; k < 2; k++) {
+    $(`sc${k}`).className = `stepcard${k < i ? ' done' : k === i ? ' on' : ''}`;
+    $(`sc${k}`).querySelector('use').setAttribute('href', `#${k < i ? 'i-check' : stepIcons[k]}`);
+  }
+}
+
+function resetScanUi(challenge) {
+  const side = SIDE[TURN[challenge]];
+  stepIcons = ['i-eye', side.icon];
+  $('sc1Label').textContent = `Turn ${side.word}`;
+  setProgress(0);
+  setStep(0);
+}
+
+// Puts the cue on the side of the ring the user should turn towards, arrow pointing out.
+function placeCue(side) {
+  $('cue').style.left = `${50 + side * TRACK_RX}%`;
+  $('cue').style.top = '50%';
+  $('cueIcon').style.transform = side < 0 ? 'rotate(180deg)' : '';
+  $('cue').hidden = false;
+}
 
 function grab() {
   const v = $('video');
@@ -97,103 +456,288 @@ async function capture(n, intervalMs) {
   return out;
 }
 
+/* ---------- Guided capture (live tracking) ---------- */
+
+// Waits until the face is straight, centred and relaxed, then takes n frames while it stays that way.
+// Progress runs from `from` to `to` percent. Returns the frames and the head pose they were taken at.
+async function captureSteady(n, from, to, okText) {
+  const out = [];
+  let since = 0, issueSince = 0, pose;
+  while (out.length < n) {
+    await tick();
+    const now = performance.now();
+    const issue = problem(live, since > 0);
+    if (issue) {
+      issueSince ||= now;
+      // A brief wobble during a hold is ignored; anything longer starts the hold again.
+      if (since && now - issueSince < JITTER_GRACE_MS) continue;
+      say(...issue);
+      status(live?.faces === 1 ? 'Face detected · adjusting' : 'Looking for your face', live?.faces === 1);
+      since = 0;
+      continue;
+    }
+    issueSince = 0;
+    say('Hold still', okText);
+    since ||= now;
+    const held = now - since;
+    setProgress(from + ((to - from) * Math.min(held, 300)) / 300);
+    status(`Face detected · ${percent}% complete`);
+    if (held >= 200 + out.length * 100) {
+      pose ??= { yaw: live.yaw, pitch: live.pitch };
+      out.push(await grab());
+    }
+  }
+  setProgress(to);
+  return { frames: out, pose };
+}
+
+// Waits for a head turn towards `side`, then takes TURN_FRAMES frames while it is held.
+// Reaching the target fills most of this step's progress; each frame taken fills the rest.
+async function captureTurn(side, base, from, to) {
+  const { word } = SIDE[side];
+  const out = [];
+  let since = 0, dipSince = 0;
+  placeCue(side);
+  while (out.length < TURN_FRAMES) {
+    await tick();
+    const now = performance.now(), p = live;
+    if (!p || p.faces !== 1) {
+      if (since && now - (dipSince ||= now) < JITTER_GRACE_MS) continue;
+      say(p?.faces > 1 ? 'Only one face, please' : 'Not quite that far', 'Keep your face inside the oval');
+      status('Looking for your face', false);
+      since = 0;
+      continue;
+    }
+    // Degrees towards `side`. yaw grows as the user turns to their own left (side -1).
+    const turned = -(p.yaw - base.yaw) * side;
+    // Start at the target; once holding, stay holding down to TURN_KEEP_DEG.
+    const holdingTurn = turned >= (since ? TURN_KEEP_DEG : TURN_TARGET_DEG);
+    if (holdingTurn) {
+      dipSince = 0;
+      if (!since) { since = now; buzz(15); }
+      say('Hold it there', 'Keep your face inside the oval');
+      if (now - since >= 100 * out.length && turned >= TURN_KEEP_DEG) out.push(await grab());
+    } else if (since && now - (dipSince ||= now) < JITTER_GRACE_MS) {
+      continue;   // a brief dip below the target while holding: keep the hold
+    } else {
+      since = 0;
+      dipSince = 0;
+      if (turned < -8) say(`Other way, turn ${word}`, 'Follow the arrow');
+      else say(`Slowly turn your head ${word}`, turned > TURN_TARGET_DEG / 2 ? 'A little further' : 'Keep your face inside the oval');
+    }
+    const reach = Math.max(0, Math.min(turned / TURN_TARGET_DEG, 1));
+    setProgress(from + (to - from) * (0.7 * reach + (0.3 * out.length) / TURN_FRAMES));
+    status(`Face detected · ${percent}% complete`);
+  }
+  $('cue').hidden = true;
+  return out;
+}
+
+async function guidedFrames(challenge) {
+  setStep(0);
+  const first = await captureSteady(2, 0, 40, 'Looking good');
+  setStep(1);
+  const turned = await captureTurn(TURN[challenge], first.pose, 40, 100);
+  setStep(2);
+  return [...first.frames, ...turned];
+}
+
+/* ---------- Timed capture (fallback when the tracker can't load) ---------- */
+
+async function timedFrames(challenge) {
+  status('Face scan', true);
+  setStep(0);
+  say('Look straight at the camera', 'Keep your face inside the oval');
+  await sleep(1500);
+  const frames = await capture(2, 200);
+  setProgress(40);
+
+  const side = TURN[challenge];
+  setStep(1);
+  say(`Slowly turn your head ${SIDE[side].word}`, 'Hold it when you get there');
+  placeCue(side);
+  await sleep(1200);
+  frames.push(...await capture(TURN_FRAMES, 200));
+  setProgress(100);
+  $('cue').hidden = true;
+  setStep(2);
+  return frames;
+}
+
+/* ---------- Verifying and results ---------- */
+
 async function api(path, opts, token) {
   const res = await fetch(path, { ...opts, headers: { ...(opts?.headers), Authorization: `Bearer ${token}` } });
   const body = await res.json().catch(() => ({}));
-  return { status: res.status, body };
+  return { status: res.status, body, headers: res.headers };
 }
 
-const REASONS = {
-  challenge: 'The %CHALLENGE% action was not detected in the frames. Do it slowly and clearly when prompted; for a turn, turn at least ~15° then come back to centre.',
-  liveness: 'Liveness check scored too low.',
-  face_changed_during_session: 'The face in the frames did not match across the session.',
-  bad_frame_count: 'Wrong number of frames.',
-  bad_image: 'A frame could not be decoded.',
-  no_face: 'No face found in one of the frames.',
-  multiple_faces: 'More than one face found in a frame.',
-  face_too_small: 'Face too small: move closer.',
-  not_neutral_or_low_quality: 'Fewer than 2 frames were neutral, sharp and well lit. Look straight, relax your face, improve lighting.',
-  already_verified: 'This user ID already has an enrolled face. To re-test, use a new user ID or delete its row from face_embeddings.',
-  duplicate: 'Matches an existing account.',
-  review: 'Borderline match, queued for review.',
+// Walks the checklist while the server works; the real outcome replaces it when it arrives.
+function startVerifying() {
+  screen('verifying');
+  const rows = [0, 1, 2].map((k) => $(`v${k}`));
+  const paint = (active) => rows.forEach((r, k) => {
+    r.className = k < active ? 'done' : k === active ? 'on' : 'wait';
+    r.querySelector('.st').innerHTML = k < active ? '<svg><use href="#i-check"/></svg>' : '';
+    r.querySelector('em')?.remove();
+    if (k === active) r.insertAdjacentHTML('beforeend', '<em>In progress</em>');
+  });
+  let active = 0;
+  paint(0);
+  const timer = setInterval(() => { if (active < 2) paint(++active); }, 300);
+  return () => { clearInterval(timer); paint(3); };
+}
+
+const FIXES = {
+  light: ['i-sun', 'Too dark or backlit', 'Face a window or a lamp'],
+  covered: ['i-glasses', 'Face partly covered', 'Remove glasses, mask or hat'],
+  camera: ['i-eye', 'Look at the camera', 'Keep it at eye level, with a relaxed face'],
+  turn: ['i-move', 'Turn your head further', 'Turn until the arc fills, then hold'],
+  slow: ['i-move', 'Moved too quickly', 'Move your head slowly when asked'],
+  oval: ['i-face', 'Keep your face in the oval', 'Move a little closer to the camera'],
+  alone: ['i-users', 'Only you in the frame', 'Make sure no one is behind you'],
+  live: ['i-person', 'Use your live face', 'Not a photo or a screen'],
+  still: ['i-person', 'Stay in front of the camera', 'Same person for the whole scan'],
+};
+// Most relevant fix first for each server reason; the rest are filled from the defaults.
+const REASON_FIX = {
+  challenge: ['turn', 'slow'], not_neutral_or_low_quality: ['camera', 'light'], liveness: ['live', 'light'],
+  face_changed_during_session: ['still'], no_face: ['oval', 'light'], face_too_small: ['oval'],
+  multiple_faces: ['alone'], sunglasses: ['covered'], mask: ['covered'], hand: ['covered'], other: ['covered'],
 };
 
-function explain(b) {
-  const d = b.debug;
-  const lines = [];
-  if (b.message) lines.push(b.message);
-  const code = d?.reason || b.reason;
-  if (code) lines.push(`Reason: ${code}`);
-  if (code && REASONS[code]) lines.push(REASONS[code].replace('%CHALLENGE%', d?.challenge ?? 'requested'));
-  if (d) {
-    lines.push(`Challenge: ${d.challenge} · liveness: ${d.liveness.toFixed(2)} · top similarity: ${d.topSimilarity.toFixed(2)}`);
-  }
-  return lines.join('\n');
+function setDebug(id, b) {
+  const box = $(id).querySelector('details.dev');
+  const d = b?.debug;
+  box.hidden = !d;
+  if (d) box.querySelector('.debug').textContent =
+    `Status: ${b.status} · reason: ${d.reason || '-'}\nChallenge: ${d.challenge}\nLiveness: ${d.liveness.toFixed(2)} · top similarity: ${d.topSimilarity.toFixed(2)}`;
 }
 
-function show(status, detail) {
-  $('resCard').hidden = false;
-  $('result').className = status;
-  $('result').textContent = status;
-  $('detail').textContent = detail || '';
+function showSuccess(title, text, body) {
+  buzz([40, 60, 40]);
+  $('okTitle').textContent = title;
+  $('okText').textContent = text;
+  $('okInitial').firstChild.textContent = 'U';
+  setDebug('success', body);
+  screen('success');
 }
+
+function showFailure({ title, text, reason, tone = 'bad', icon = 'i-alert', fixes = true, retry = true, body, headers }) {
+  buzz(150);
+  $('failBadge').className = `badge ${tone}`;
+  $('failIcon').querySelector('use').setAttribute('href', `#${icon}`);
+  $('failTitle').textContent = title;
+  $('failText').textContent = text;
+  const keys = [...new Set([...(REASON_FIX[reason] ?? []), 'light', 'covered', 'camera'])].slice(0, 3);
+  $('fixes').innerHTML = keys.map((k) => {
+    const [ic, t, s] = FIXES[k];
+    return `<li><svg><use href="#${ic}"/></svg><div><b>${t}</b><span>${s}</span></div></li>`;
+  }).join('');
+  $('fixPanel').hidden = !fixes;
+  const left = headers?.get('RateLimit-Remaining'), limit = headers?.get('RateLimit-Limit');
+  $('attempts').hidden = left == null;
+  if (left != null) {
+    $('attempts').textContent = 'Attempts left: ';
+    $('attempts').append(Object.assign(document.createElement('b'), { textContent: `${left} of ${limit}` }));
+  }
+  $('retry').hidden = !retry;
+  setDebug('failure', body);
+  screen('failure');
+}
+
+function showOutcome(v) {
+  const b = v.body, reason = b.debug?.reason || b.reason;
+  switch (b.status) {
+    case 'VERIFIED':
+      return showSuccess('Face verified', 'Your face is now linked to your account.', b);
+    case 'ALREADY_VERIFIED':
+      return showSuccess('Already verified', 'This account already has a face linked.', b);
+    case 'IN_REVIEW':
+      return showFailure({ title: 'Under review', text: "We need to take a closer look. We'll let you know soon.", tone: 'warn', icon: 'i-clock', fixes: false, retry: false, body: b });
+    case 'DUPLICATE':
+      return showFailure({ title: 'Face already linked', text: 'This face is linked to another account, so nothing was linked here.', fixes: false, retry: false, body: b });
+    default:   // RETRY, FAILED
+      return showFailure({
+        title: "We couldn't verify you",
+        text: 'Nothing was linked. This is usually easy to fix. Try these and scan again.',
+        reason, body: b, headers: v.headers,
+      });
+  }
+}
+
+/* ---------- Flow ---------- */
+
+$('start').addEventListener('click', run);
+$('retry').addEventListener('click', run);
+$('cancel').addEventListener('click', () => { cancelled = true; });
+for (const id of ['helpBtn', 'helpLink']) $(id).addEventListener('click', () => ($('help').hidden = false));
+$('helpClose').addEventListener('click', () => ($('help').hidden = true));
 
 async function run() {
-  $('start').disabled = true;
-  $('resCard').hidden = true;
+  cancelled = false;
+  deadline = Infinity;
+  fillUser();
+  let token;
   try {
-    const sub = $('uid').value.trim();
-    const t = await fetch(`/dev/token?sub=${encodeURIComponent(sub)}`);
-    if (!t.ok) throw new Error('Could not get a dev token (is DEV_MODE on for the api?)');
-    const { token } = await t.json();
+    const t = await fetch(`/dev/token?sub=${encodeURIComponent(userId())}`);
+    if (!t.ok) throw new Error('Could not get a dev token. Is DEV_MODE on for the api?');
+    ({ token } = await t.json());
+    const session = api('/v1/face/session', { method: 'POST' }, token);
 
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } });
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } });
+    } catch {
+      return showFailure({ title: 'Camera not available', text: 'Allow camera access in your browser settings, then try again.', icon: 'i-camera', fixes: false });
+    }
+    screen('scan');
+    say('Getting ready…', 'This takes a moment');
+    status('Starting camera…', false);
     $('video').srcObject = stream;
-    $('camCard').hidden = false;
     await new Promise((r) => ($('video').onloadedmetadata = r));
+    const tracker = await trackerReady;
+    if (cancelled) throw new Cancelled();
 
-    const s = await api('/v1/face/session', { method: 'POST' }, token);
-    if (s.status === 429) throw new Error('Too many attempts. Wait a few minutes or use a different user ID.');
+    const s = await session;
+    if (s.status === 429) {
+      return showFailure({ title: 'Too many attempts', text: 'Please wait a few minutes, then try again.', tone: 'warn', icon: 'i-clock', fixes: false });
+    }
     if (s.status !== 200) throw new Error(`Session failed: ${s.body.error ?? s.status}`);
     const { sessionId, challenge } = s.body;
+    deadline = performance.now() + SESSION_BUDGET_MS;
+    resetScanUi(challenge);
 
-    setPrompt('Look straight at the camera. Relax your face.');
-    await sleep(2000);
-    $('oval').classList.add('go');
+    let frames;
+    if (tracker) {
+      startTracking(tracker);
+      frames = await guidedFrames(challenge);
+      stopTracking();
+    } else {
+      frames = await timedFrames(challenge);
+    }
+    stream.getTracks().forEach((tr) => tr.stop());
+    if (cancelled) throw new Cancelled();
 
-    const frames = [];
-    frames.push(...await capture(2, 300));
-
-    setPrompt(INSTRUCTIONS[challenge]);
-    const cc = CHALLENGE_CAPTURE[challenge];
-    await sleep(cc.delay);
-    frames.push(...await capture(cc.n, cc.interval));
-
-    setPrompt('Look straight again and hold still');
-    await sleep(1200);
-    frames.push(...await capture(2, 300));
-
-    $('oval').classList.remove('go');
-    setPrompt('Checking...');
-
+    const done = startVerifying();
     const form = new FormData();
     form.append('sessionId', sessionId);
     frames.forEach((b, i) => form.append('frames', b, `f${i}.jpg`));
     const v = await api('/v1/face/verify', { method: 'POST', body: form }, token);
-
+    if (v.status === 410) throw new Error('timeout');
     if (v.status !== 200 && !v.body.status) throw new Error(`Verify failed: ${v.body.error ?? v.status}`);
-    show(v.body.status ?? 'ERROR', explain(v.body));
+    done();
+    showOutcome(v);
   } catch (e) {
-    show('ERROR', e.message);
+    if (e instanceof Cancelled) screen('intro');
+    else if (e.message === 'timeout') showFailure({ title: 'Time ran out', text: 'The scan took too long. Please start again.', tone: 'warn', icon: 'i-clock', reason: 'challenge' });
+    else showFailure({ title: 'Something went wrong', text: e.message, fixes: false });
   } finally {
+    stopTracking();
+    $('cue').hidden = true;
+    $('help').hidden = true;
     stream?.getTracks().forEach((tr) => tr.stop());
-    $('camCard').hidden = true;
-    setPrompt('');
-    $('start').disabled = false;
   }
 }
-
-$('start').addEventListener('click', run);
 </script>
 </body>
 </html>

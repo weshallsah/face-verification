@@ -25,7 +25,7 @@ class Config:
     model_version: str = os.getenv("MODEL_VERSION", "arcface-r50-w600k-v1")
 
     # Frame limits
-    min_frames: int = 5
+    min_frames: int = 4
     max_frames: int = 10
     min_face_px: int = 120                 # shortest side of the face box
 
@@ -37,9 +37,8 @@ class Config:
     neutral_max_yaw_deg: float = 15.0
     neutral_max_pitch_deg: float = 15.0
     min_neutral_frames: int = 2
-    turn_min_yaw_deg: float = 15.0         # head turn must exceed this in some frame
     challenge_start_max_yaw_deg: float = 15.0   # first frame must be roughly centred
-    blink_closed_min: float = 0.5          # mean eyeBlink score that counts as closed
+    turn_min_yaw_deg: float = 12.0         # the head turn must reach this far from the first frame
     same_person_min_sim: float = 0.55      # all frames in a session must agree
 
     # Dedup (cosine similarity) — STARTING POINTS, must be calibrated

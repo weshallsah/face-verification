@@ -43,7 +43,7 @@ def _yaw_pitch(m):
     r = m[:3, :3]
     yaw = math.degrees(math.atan2(r[0, 2], r[2, 2]))
     pitch = math.degrees(math.asin(max(-1.0, min(1.0, -r[1, 2]))))
-    return yaw, pitch   # verify sign convention with a quick test: turn left → which sign?
+    return yaw, pitch   # yaw > 0: subject turned to their left; pitch > 0: looking up
 
 
 def align(bgr, kps):
@@ -103,35 +103,21 @@ def is_neutral(frame_info, cfg):
     )
 
 
-def nose_offset(kps):
-    """Nose x relative to the eye midpoint, in inter-eye distances, from detector keypoints.
-
-    Frames are un-mirrored camera images, so the subject's left is image right:
-    > 0 means the head is turned to the subject's left, < 0 to their right.
-    """
-    eyes_mid = (kps[0][0] + kps[1][0]) / 2
-    return float((kps[2][0] - eyes_mid) / max(abs(kps[1][0] - kps[0][0]), 1.0))
-
-
-def blink_score(frame_info):
-    s = frame_info["blendshapes"]
-    return (s.get("eyeBlinkLeft", 0) + s.get("eyeBlinkRight", 0)) / 2
+# Turn direction per challenge, as the sign of yaw. yaw > 0 is the subject turning to their
+# own left: the face turns towards the image's right side (confirmed with users).
+TURN_SIDE = {"LOOK_LEFT": 1, "LOOK_RIGHT": -1}
 
 
 def challenge_passed(challenge, infos, cfg):
-    """infos: per-frame dicts from Landmarker.analyse plus "nose_dx", in capture order."""
-    if challenge == "BLINK":
-        closed = [blink_score(f) > cfg.blink_closed_min for f in infos]
-        # open → closed → open somewhere in the sequence
-        return any(closed[1:-1]) and not closed[0] and not closed[-1]
+    """infos: per-frame dicts from Landmarker.analyse, in capture order."""
+    side = TURN_SIDE.get(challenge)
+    if side is None:
+        return False
+    first = infos[0]
+    if abs(first["yaw"]) >= cfg.challenge_start_max_yaw_deg:
+        return False
 
-    if challenge in ("TURN_LEFT", "TURN_RIGHT"):
-        # Magnitude from the MediaPipe pose, direction from 2D geometry, so the check
-        # does not depend on the pose matrix's sign convention.
-        direction = 1 if challenge == "TURN_LEFT" else -1
-        started_centred = abs(infos[0]["yaw"]) < cfg.challenge_start_max_yaw_deg
-        turned = any(
-            abs(f["yaw"]) > cfg.turn_min_yaw_deg and f["nose_dx"] * direction > 0 for f in infos
-        )
-        return started_centred and turned
-    return False
+    # Some frame turned the asked way, and none turned the other way (so a clip that
+    # turns both ways can't pass either challenge).
+    turns = [(f["yaw"] - first["yaw"]) * side for f in infos]
+    return max(turns) >= cfg.turn_min_yaw_deg and min(turns) > -cfg.turn_min_yaw_deg
