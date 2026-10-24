@@ -3,7 +3,7 @@
 services:
   face-service:
     build:
-      dockerfile: face_service/Dockerfile
+      dockerfile: backend/python-face-service/Dockerfile
     deploy:
       resources:
         reservations:

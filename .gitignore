@@ -1,5 +1,5 @@
 node_modules/
 __pycache__/
 .env
-face_service/models/
-face_service/app/face_pb2*.py
+backend/python-face-service/models/
+backend/python-face-service/app/face_pb2*.py

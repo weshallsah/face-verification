@@ -12,6 +12,15 @@ enum Challenge {
   BLINK = 1;
   TURN_LEFT = 2;
   TURN_RIGHT = 3;
+  HEAD_MOTION = 4;   // the only challenge the API issues; the others are kept for compatibility
+}
+
+// Which part of the capture flow a frame belongs to.
+enum Phase {
+  PHASE_UNSPECIFIED = 0;
+  NEUTRAL = 1;     // relaxed, looking straight; defines the per-user baseline
+  CHALLENGE = 2;   // the blink / head turn itself
+  RETURN = 3;      // back to looking straight after the challenge
 }
 
 enum Verdict {
@@ -20,20 +29,29 @@ enum Verdict {
   DUPLICATE = 2;       // matches an existing account
   REVIEW = 3;          // borderline, queued for a human
   RETRY = 4;           // capture problem, see reason_code
-  REJECTED_SPOOF = 5;  // liveness or challenge failed
+  REJECTED_SPOOF = 5;  // liveness or identity-consistency check failed
   ALREADY_VERIFIED = 6; // this user_id already has an enrolled face
 }
 
+message Frame {
+  bytes data = 1;          // JPEG
+  Phase phase = 2;
+  int32 client_ts_ms = 3;  // browser timestamp relative to session start; logging only
+}
+
 message EnrollRequest {
+  reserved 4;              // was `repeated bytes frames`
   string user_id = 1;
   string session_id = 2;
   Challenge challenge = 3;
-  repeated bytes frames = 4;   // JPEGs in capture order
+  repeated Frame frames = 5;   // in capture order
+  int32 prompt_ts_ms = 6;      // client time the challenge prompt was shown; logging only
+  int32 restarts = 7;          // client-reported challenge restarts; logging only
 }
 
 message EnrollResponse {
   Verdict verdict = 1;
-  string reason_code = 2;      // e.g. "sunglasses", "multiple_faces", "not_neutral"
+  string reason_code = 2;      // e.g. "sunglasses", "multiple_faces", "blink_not_detected"
   float top_similarity = 3;    // for logging only; never shown to users
   float liveness_score = 4;
 }

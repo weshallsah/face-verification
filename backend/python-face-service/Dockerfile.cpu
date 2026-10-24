@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+# build-essential: insightface compiles a Cython extension; GL/EGL libs are needed by mediapipe
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential libgl1 libglib2.0-0 libegl1 libgles2 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY backend/python-face-service/requirements.txt .
+RUN sed -i 's/^onnxruntime-gpu/onnxruntime/' requirements.txt \
+    && pip install --no-cache-dir -r requirements.txt
+COPY backend/python-face-service/app ./app
+COPY proto ./proto
+RUN python -m grpc_tools.protoc -I proto --python_out=app --grpc_python_out=app proto/face.proto \
+    && sed -i 's/^import face_pb2 as/from . import face_pb2 as/' app/face_pb2_grpc.py
+CMD ["python", "-m", "app.main"]

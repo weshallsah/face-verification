@@ -2,13 +2,19 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: backend/node-api/Dockerfile
     environment:
       JWT_SECRET: ${JWT_SECRET}
       REDIS_URL: redis://redis:6379
       FACE_GRPC_ADDR: face-service:50051
       DEV_MODE: "true"          # serves the test page and /dev/token; remove in production
       FACE_RATE_LIMIT: "100"    # attempts per 10 min per user; default is 5
+      # /verify page config (served at /verify/config.json). Set real values in production.
+      VERIFY_APP_NAME: "our app"
+      VERIFY_LOGIN_URL: "/login"
+      VERIFY_SUPPORT_URL: "https://example.com/support"      # "I think this is a mistake" opens this
+      VERIFY_PRIVACY_URL: ""                                  # full privacy policy; link hidden when empty
+      VERIFY_RETURN_ALLOWLIST: ""                             # comma-separated origins allowed as ?returnUrl=
       PGHOST: postgres          # dev-only DB viewer (/dev/db); not used outside DEV_MODE
       PGUSER: face_svc
       PGPASSWORD: ${FACE_DB_PASSWORD}
@@ -20,7 +26,7 @@ services:
   face-service:
     build:
       context: .
-      dockerfile: face_service/Dockerfile.cpu   # GPU: add -f docker-compose.gpu.yml
+      dockerfile: backend/python-face-service/Dockerfile.cpu   # GPU: add -f docker-compose.gpu.yml
     environment:
       # key/value form, so '@' and similar characters in the password are safe
       DATABASE_URL: "host=postgres port=5432 dbname=app user=face_svc password='${FACE_DB_PASSWORD}'"
@@ -28,7 +34,7 @@ services:
       DEV_MODE: "true"
       APP_ENV: development
     volumes:
-      - ./face_service/models:/app/models:ro
+      - ./backend/python-face-service/models:/app/models:ro
     expose: ["50051"]              # internal only
     depends_on: [postgres]
     restart: unless-stopped

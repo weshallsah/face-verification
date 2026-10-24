@@ -1,0 +1,98 @@
+/* Design tokens for /verify: the ONLY place colours, radii, spacing and fonts are defined.
+   Light values are the default; dark values apply under prefers-color-scheme: dark.
+
+   !! The *-soft tints and --accent-text below are PRECOMPUTED hex (older Android WebViews do not support
+   !! color-mix()). They are derived from --accent #3D5AFE and MUST be regenerated if the accent changes:
+   !!   light  --accent-soft = 11% accent on #FFFFFF      --accent-text = the accent itself
+   !!   dark   --accent-soft = 24% accent on #111318      --accent-text = 62% accent on #FFFFFF
+   !! (the design export offers #0F7C80, #6D3FD8 and #D6336C as alternatives). */
+
+:root {
+  color-scheme: light dark;
+
+  /* type */
+  --font: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Devanagari', sans-serif;
+
+  /* brand */
+  --accent: #3D5AFE;
+  --accent-text: #3D5AFE;
+  --accent-soft: #EAEDFF;
+  --on-accent: #FFFFFF;
+  --focus: #7FA2FF;
+
+  /* surfaces */
+  --stage: #ECEEF3;
+  --bg: #FFFFFF;
+  --surface: #F5F6FA;
+  --card: #FFFFFF;
+  --border: #E3E6ED;
+  --text: #14161C;
+  --muted: #575D6C;
+  --neutral-soft: #F0F2F6;
+  --shadow: 0 1px 2px rgba(20, 22, 28, .05), 0 10px 30px rgba(20, 22, 28, .06);
+
+  /* status (each is used with an icon and text, never alone) */
+  --success: #137A57;
+  --success-soft: #E5F5EE;
+  --amber: #975800;
+  --amber-soft: #FFF2DB;
+  --red: #B5372F;
+  --red-soft: #FCEAE8;
+
+  /* camera screen: always dark, in both themes */
+  --cam-bg: #0E1014;
+  --cam-text: #FFFFFF;
+  --cam-text-dim: rgba(255, 255, 255, .85);
+  --cam-hint: rgba(255, 255, 255, .75);
+  --cam-btn: rgba(255, 255, 255, .16);
+  --ring-idle: rgba(255, 255, 255, .34);
+  --ring-half: rgba(255, 255, 255, .5);
+  --ring-hold: #FFFFFF;
+  --ring-bad: #FF8F86;
+  --ring-ok: #3DDC97;
+  --pill-n: rgba(18, 20, 26, .74);
+  --pill-bad: rgba(112, 34, 30, .86);
+  --pill-ok: rgba(18, 112, 78, .9);
+  --check-bg: #1FAE6E;
+  --dim: rgba(8, 10, 14, .52);
+  --dim-blur: 12px;
+
+  /* shape and spacing */
+  --r-btn: 16px;
+  --r-card: 18px;
+  --r-lg: 22px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+  --btn-h: 56px;
+  --tap: 48px;            /* minimum touch target */
+  --gutter: 24px;
+  --panel-w: 460px;       /* desktop card */
+
+  /* phone safe areas (notch, home bar, rounded corners) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent-text: #8799FE;
+    --accent-soft: #1C244F;
+    --stage: #08090C;
+    --bg: #111318;
+    --surface: #0C0D11;
+    --card: #1A1D24;
+    --border: #2C313C;
+    --text: #F1F3F7;
+    --muted: #A9AFBC;
+    --neutral-soft: #23272F;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    --success: #4CC690;
+    --success-soft: rgba(76, 198, 144, .15);
+    --amber: #F0B455;
+    --amber-soft: rgba(240, 180, 85, .15);
+    --red: #F08A82;
+    --red-soft: rgba(240, 138, 130, .15);
+  }
+}
