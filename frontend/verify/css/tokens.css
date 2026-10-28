@@ -54,8 +54,8 @@
   --pill-bad: rgba(112, 34, 30, .86);
   --pill-ok: rgba(18, 112, 78, .9);
   --check-bg: #1FAE6E;
-  --dim: rgba(8, 10, 14, .52);
-  --dim-blur: 12px;
+  --dim: rgba(8, 10, 14, .25);       /* outside the oval: 25% dark tint ... */
+  --dim-blur: 3px;                   /* ... and a light blur (25% of the old 12px) */
 
   /* shape and spacing */
   --r-btn: 16px;

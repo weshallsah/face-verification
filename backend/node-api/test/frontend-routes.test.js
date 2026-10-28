@@ -10,7 +10,7 @@ async function serve(env) {
   mountFrontend(app, { frontendDir: FRONTEND_DIR, env: { JWT_SECRET: 'test-secret', ...env } });
   const server = await new Promise((r) => { const s = app.listen(0, '127.0.0.1', () => r(s)); });
   const base = `http://127.0.0.1:${server.address().port}`;
-  return { base, close: () => new Promise((r) => { server.close(r); server.closeAllConnections(); }), get: (p) => fetch(base + p) };
+  return { base, close: () => new Promise((r) => { server.close(r); server.closeAllConnections(); }), get: (p, opts) => fetch(base + p, opts) };
 }
 
 test('DEV_MODE off: /verify is served, every dev route is a 404', async () => {
@@ -23,6 +23,9 @@ test('DEV_MODE off: /verify is served, every dev route is a 404', async () => {
     assert.ok((await s.get('/verify/')).ok);
     assert.ok((await s.get('/verify/js/main.js')).ok);
     assert.ok((await s.get('/verify/css/tokens.css')).ok);
+    const root = await s.get('/', { redirect: 'manual' });
+    assert.equal(root.status, 302);
+    assert.equal(root.headers.get('location'), '/verify');
 
     for (const p of ['/dev/token?sub=1', '/dev/test', '/dashboard.html', '/index.html', '/verify/js/preview.js', '/verify/package.json']) {
       assert.equal((await s.get(p)).status, 404, p);
@@ -41,10 +44,11 @@ test('DEV_MODE unset behaves like off', async () => {
   } finally { await s.close(); }
 });
 
-test('DEV_MODE on: /dev/test, /dev/token and the preview module exist', async () => {
+test('DEV_MODE on: /dev/token and the preview module exist; the old test page is gone', async () => {
   const s = await serve({ DEV_MODE: 'true' });
   try {
-    assert.equal((await s.get('/dev/test')).status, 200);
+    assert.equal((await s.get('/dev/test')).status, 404);
+    assert.equal((await s.get('/', { redirect: 'manual' })).headers.get('location'), '/verify');
     assert.equal((await s.get('/verify/js/preview.js')).status, 200);
     assert.equal((await (await s.get('/verify/config.json')).json()).devMode, true);
     assert.equal((await s.get('/dev/token?sub=abc')).status, 400);

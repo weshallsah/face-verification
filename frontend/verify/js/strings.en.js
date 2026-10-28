@@ -35,6 +35,8 @@ export default {
     title: 'How it works',
     demoLabel: 'Animation: a face fits in the oval, holds still, moves in a circle, looks straight again, then a green check appears',
     demoCaptions: ['Fit your face and hold still', 'Move your head in a circle', 'Look straight again', 'Done!'],
+    animLabel: 'Animation: a person holds still, slowly moves their head in a circle while a ring fills, then looks straight again',
+    animCaptions: ['Fit your face and hold still', 'Slowly move your head in a circle', 'Look straight again'],
     steps: [
       'Fit your face in the oval and hold still',
       'Slowly move your head around in a circle',

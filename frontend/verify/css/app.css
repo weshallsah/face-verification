@@ -106,6 +106,10 @@ h1, h2, p { margin: 0; }
 .tut-caps { position: absolute; left: 0; right: 0; bottom: 14px; height: 24px; font-size: 15px; font-weight: 600; color: var(--muted); text-align: center; }
 .tut-caps span { position: absolute; left: 0; right: 0; }
 .tut-caps .cap4 { color: var(--success); }
+.tut-demo-lottie { height: auto; display: flex; flex-direction: column; align-items: center; padding: 14px 0 12px; }
+.tut-anim { width: 200px; aspect-ratio: 400 / 505; }
+.tut-cap { height: 24px; margin: 6px 0 0; font-size: 15px; font-weight: 600; color: var(--muted); text-align: center; }
+.tut-cap span { display: block; }
 
 .perm-card { margin-top: 28px; padding: 22px; border-radius: var(--r-lg); background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .perm-card h1 { font-size: 26px; line-height: 1.25; font-weight: 800; }

@@ -1,4 +1,4 @@
-// Capture logic: a PORT of the HEAD_MOTION flow from the old test page (frontend/index.html), with the
+// Capture logic: a PORT of the HEAD_MOTION flow from the old test page (frontend/index.html, since removed), with the
 // DOM calls replaced by the `ui` interface. Detection, timing, buffering and every threshold below are
 // unchanged. The only additions are: guidance() also returns a `code`, the ring uses ring-map.js, and
 // abort().
